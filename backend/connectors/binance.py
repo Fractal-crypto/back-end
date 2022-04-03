@@ -24,14 +24,6 @@ logger = logging.getLogger()
 class BinanceClient:
     def __init__(self, public_key: str, secret_key: str, testnet: bool, futures: bool):
 
-        """
-        https://binance-docs.github.io/apidocs/futures/en
-        :param public_key:
-        :param secret_key:
-        :param testnet:
-        :param futures: if False, the Client will be a Spot API Client
-        """
-
         self.futures = futures
 
         if self.futures:
@@ -138,11 +130,7 @@ class BinanceClient:
 
     def get_contracts(self) -> typing.Dict[str, Contract]:
 
-        """
-        Get a list of symbols/contracts on the exchange to be displayed in the OptionMenus of the interface.
-        :return:
-        """
-
+   
         if self.futures:
             exchange_info = self._make_request("GET", "/fapi/v1/exchangeInfo", dict())
         else:
@@ -154,7 +142,7 @@ class BinanceClient:
             for contract_data in exchange_info['symbols']:
                 contracts[contract_data['symbol']] = Contract(contract_data, self.platform)
 
-        return collections.OrderedDict(sorted(contracts.items()))  # Sort keys of the dictionary alphabetically
+        return collections.OrderedDict(sorted(contracts.items()))  
 
     def get_historical_candles(self, contract: Contract, interval: str) -> typing.List[Candle]:
 
@@ -238,17 +226,6 @@ class BinanceClient:
         return balances
 
     def place_order(self, contract: Contract, order_type: str, quantity: float, side: str, price=None, tif=None) -> OrderStatus:
-
-        """
-        Place an order. Based on the order_type, the price and tif arguments are not required
-        :param contract:
-        :param order_type: LIMIT, MARKET, STOP, TAKE_PROFIT, LIQUIDATION
-        :param quantity:
-        :param side:
-        :param price:
-        :param tif:
-        :return:
-        """
 
         data = dict()
         data['symbol'] = contract.symbol
@@ -397,14 +374,8 @@ class BinanceClient:
         if "BTCUSDT" not in self.ws_subscriptions["bookTicker"]:
             self.subscribe_channel([self.contracts["BTCUSDT"]], "bookTicker")
 
-    def _on_close(self, ws):
+    def _Stop(self, ws):
 
-        """
-        Callback method triggered when the connection drops
-        :return:
-        """
-
-        logger.warning("Binance Websocket connection closed")
         self.ws_connected = False
 
     def _on_error(self, ws, msg: str):
