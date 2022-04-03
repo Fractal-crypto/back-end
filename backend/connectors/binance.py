@@ -69,34 +69,18 @@ class BinanceClient:
 
     def _add_log(self, msg: str):
 
-        """
-        Add a log to the list so that it can be picked by the update_ui() method of the root component.
-        :param msg:
-        :return:
-        """
+ 
 
         logger.info("%s", msg)
         self.logs.append({"log": msg, "displayed": False})
 
     def _generate_signature(self, data: typing.Dict) -> str:
 
-        """
-        Generate a signature with the HMAC-256 algorithm.
-        :param data: Dictionary of parameters to be converted to a query string
-        :return:
-        """
-
+  
         return hmac.new(self._secret_key.encode(), urlencode(data).encode(), hashlib.sha256).hexdigest()
 
     def _make_request(self, method: str, endpoint: str, data: typing.Dict):
 
-        """
-        Wrapper that normalizes the requests to the REST API and error handling.
-        :param method: GET, POST, DELETE
-        :param endpoint: Includes the /api/v1 part
-        :param data: Parameters of the request
-        :return:
-        """
 
         if method == "GET":
             try:
@@ -315,11 +299,6 @@ class BinanceClient:
 
     def _start_ws(self):
 
-        """
-        Infinite loop (thus has to run in a Thread) that reopens the websocket connection in case it drops
-        :return:
-        """
-
         self.ws = websocket.WebSocketApp(self._wss_url, on_open=self._on_open, on_close=self._on_close,
                                          on_error=self._on_error, on_message=self._on_message)
 
@@ -329,16 +308,11 @@ class BinanceClient:
                     self.ws.run_forever()  # Blocking method that ends only if the websocket connection drops
                 else:
                     break
-            except Exception as e:
-                logger.error("Binance error in run_forever() method: %s", e)
-            time.sleep(2)
+          
 
     def _on_open(self, ws):
-        logger.info("Binance connection opened")
 
         self.ws_connected = True
-
-        # The aggTrade channel is subscribed to in the _switch_strategy() method of strategy_component.py
 
         for channel in ["bookTicker", "aggTrade"]:
             for symbol in self.ws_subscriptions[channel]:
@@ -353,28 +327,18 @@ class BinanceClient:
 
     def _on_error(self, ws, msg: str):
 
-        """
-        Callback method triggered in case of error
-        :param msg:
-        :return:
-        """
-
+      
         logger.error("Binance connection error: %s", msg)
 
     def _on_message(self, ws, msg: str):
 
-        """
-        The websocket updates of the channels the program subscribed to will go through this callback method
-        :param msg:
-        :return:
-        """
+      
 
         data = json.loads(msg)
 
         if "u" in data and "A" in data:
-            data['e'] = "bookTicker"  # For Binance Spot, to make the data structure uniform with Binance Futures
-            # See the data structure difference here: https://binance-docs.github.io/apidocs/spot/en/#individual-symbol-book-ticker-streams
-
+            data['e'] = "bookTicker"  
+            
         if "e" in data:
             if data['e'] == "bookTicker":
 
@@ -411,19 +375,7 @@ class BinanceClient:
 
     def subscribe_channel(self, contracts: typing.List[Contract], channel: str, reconnection=False):
 
-        """
-        Subscribe to updates on a specific topic for all the symbols.
-        If your list is bigger than 300 symbols, the subscription will fail (observed on Binance Spot).
-        :param contracts:
-        :param channel: aggTrades, bookTicker...
-        :param reconnection: Force to subscribe to a symbol even if it already in self.ws_subscriptions[symbol] list
-        :return:
-        """
-
-        if len(contracts) > 200:
-            logger.warning("Subscribing to more than 200 symbols will most likely fail. "
-                           "Consider subscribing only when adding a symbol to your Watchlist or when starting a "
-                           "strategy for a symbol.")
+     
 
         data = dict()
         data['method'] = "SUBSCRIBE"
@@ -445,10 +397,9 @@ class BinanceClient:
 
         try:
             self.ws.send(json.dumps(data))  # Converts the JSON object (dictionary) to a JSON string
-            logger.info("Binance: subscribing to: %s", ','.join(data['params']))
-        except Exception as e:
-            logger.error("Websocket error while subscribing to @bookTicker and @aggTrade: %s", e)
 
+        except Exception as e:
+        
         self._ws_id += 1
 
     def get_trade_size(self, contract: Contract, price: float, balance_pct: float):
