@@ -146,17 +146,10 @@ class BinanceClient:
 
     def get_historical_candles(self, contract: Contract, interval: str) -> typing.List[Candle]:
 
-        """
-        Get a list of the most recent candlesticks for a given symbol/contract and interval.
-        :param contract:
-        :param interval: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M
-        :return:
-        """
-
         data = dict()
         data['symbol'] = contract.symbol
         data['interval'] = interval
-        data['limit'] = 1000  # The maximum number of candles is 1000 on Binance Spot
+        data['limit'] = 1000  
 
         if self.futures:
             raw_candles = self._make_request("GET", "/fapi/v1/klines", data)
@@ -173,13 +166,7 @@ class BinanceClient:
 
     def get_bid_ask(self, contract: Contract) -> typing.Dict[str, float]:
 
-        """
-        Get a snapshot of the current bid and ask price for a symbol/contract, to be sure there is something
-        to display in the Watchlist.
-        :param contract:
-        :return:
-        """
-
+  
         data = dict()
         data['symbol'] = contract.symbol
 
@@ -198,11 +185,6 @@ class BinanceClient:
             return self.prices[contract.symbol]
 
     def get_balances(self) -> typing.Dict[str, Balance]:
-
-        """
-        Get the current balance of the account, the data is different between Spot and Futures
-        :return:
-        """
 
         data = dict()
         data['timestamp'] = int(time.time() * 1000)
@@ -230,12 +212,12 @@ class BinanceClient:
         data = dict()
         data['symbol'] = contract.symbol
         data['side'] = side.upper()
-        data['quantity'] = round(int(quantity / contract.lot_size) * contract.lot_size, 8)  # int() to round down
-        data['type'] = order_type.upper()  # Makes sure the order type is in uppercase
+        data['quantity'] = round(int(quantity / contract.lot_size) * contract.lot_size, 8)  
+        data['type'] = order_type.upper()  
 
         if price is not None:
             data['price'] = round(round(price / contract.tick_size) * contract.tick_size, 8)
-            data['price'] = '%.*f' % (contract.price_decimals, data['price'])  # Avoids scientific notation
+            data['price'] = '%.*f' % (contract.price_decimals, data['price'])  
 
         if tif is not None:
             data['timeInForce'] = tif
@@ -276,7 +258,6 @@ class BinanceClient:
 
         if order_status is not None:
             if not self.futures:
-                # Get the average execution price based on the recent trades
                 order_status['avgPrice'] = self._get_execution_price(contract, order_id)
             order_status = OrderStatus(order_status, self.platform)
 
@@ -284,13 +265,6 @@ class BinanceClient:
 
     def _get_execution_price(self, contract: Contract, order_id: int) -> float:
 
-        """
-        For Binance Spot only, find the equivalent of the 'avgPrice' key on the futures side.
-        The average price is the weighted sum of each trade price related to the order_id
-        :param contract:
-        :param order_id:
-        :return:
-        """
 
         data = dict()
         data['timestamp'] = int(time.time() * 1000)
@@ -315,7 +289,7 @@ class BinanceClient:
 
         return round(round(avg_price / contract.tick_size) * contract.tick_size, 8)
 
-    def get_order_status(self, contract: Contract, order_id: int) -> OrderStatus:
+    def trade_status(self, contract: Contract, order_id: int) -> OrderStatus:
 
         data = dict()
         data['timestamp'] = int(time.time() * 1000)
@@ -331,7 +305,6 @@ class BinanceClient:
         if order_status is not None:
             if not self.futures:
                 if order_status['status'] == "FILLED":
-                    # Get the average execution price based on the recent trades
                     order_status['avgPrice'] = self._get_execution_price(contract, order_id)
                 else:
                     order_status['avgPrice'] = 0
@@ -480,21 +453,11 @@ class BinanceClient:
 
     def get_trade_size(self, contract: Contract, price: float, balance_pct: float):
 
-        """
-        Compute the trade size for the strategy module based on the percentage of the balance to use
-        that was defined in the strategy component.
-        :param contract:
-        :param price: Used to convert the amount to invest into an amount to buy/sell
-        :param balance_pct:
-        :return:
-        """
-
-        logger.info("Getting Binance trade size...")
 
         balance = self.get_balances()
 
         if balance is not None:
-            if contract.quote_asset in balance:  # On Binance Spot, the quote asset isn't necessarily USDT
+            if contract.quote_asset in balance:  
                 if self.futures:
                     balance = balance[contract.quote_asset].wallet_balance
                 else:
@@ -506,9 +469,7 @@ class BinanceClient:
 
         trade_size = (balance * balance_pct / 100) / price
 
-        trade_size = round(round(trade_size / contract.lot_size) * contract.lot_size, 8)  # Removes extra decimals
-
-        logger.info("Binance current %s balance = %s, trade size = %s", contract.quote_asset, balance, trade_size)
+        trade_size = round(round(trade_size / contract.lot_size) * contract.lot_size, 8) 
 
         return trade_size
 
